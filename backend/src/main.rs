@@ -23,9 +23,7 @@ fn main() {
             .route("/test_index.html", http::Method::GET, test_index);
         app = life::setup_routes(app);
         app
-    })
-    .bind("127.0.0.1:60324").unwrap()
-    .start();
+    }).bind("127.0.0.1:60324").unwrap().start();
     actix_sys.run();
 }
 
