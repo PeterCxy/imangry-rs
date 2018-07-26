@@ -15,7 +15,7 @@ use sled::{ConfigBuilder, Tree};
 
 fn main() {
     let actix_sys = actix::System::new("imangry");
-    let db = open_db("data");
+    let db = open_db("data/db");
     let db_sync_addr = db_sync::DbSyncActor::start_actor(&db);
     let state = app::AngryAppState::new(db, db_sync_addr);
     server::new(move || {
@@ -36,6 +36,8 @@ fn test_index(_info: Path<()>) -> impl Responder {
 fn open_db(db_path: &str) -> Tree {
     let config = ConfigBuilder::new()
         .path(db_path.to_owned())
+        .io_buf_size(65535)
+        .min_items_per_segment(4) // For maximum 16k key/value pair
         .build();
     Tree::start(config).unwrap()
 }
