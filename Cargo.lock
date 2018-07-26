@@ -107,6 +107,7 @@ dependencies = [
 name = "backend"
 version = "0.1.0"
 dependencies = [
+ "actix 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "actix-web 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.23 (registry+https://github.com/rust-lang/crates.io-index)",

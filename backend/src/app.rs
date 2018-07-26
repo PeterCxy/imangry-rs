@@ -1,8 +1,10 @@
+use actix::Addr;
 use byteorder::{ByteOrder, LittleEndian};
+use db_sync::{DbSyncActor, DbSyncCommand};
 use futures::{Canceled, Future};
 use futures::future::poll_fn;
 use futures::sync::oneshot::channel;
-use sled::{ConfigBuilder, Tree, Error as DbError};
+use sled::{Tree, Error as DbError};
 use std::sync::Arc;
 use tokio_threadpool::{BlockingError, blocking, ThreadPool};
 
@@ -58,24 +60,23 @@ macro_rules! flatten_error {
 #[derive(Clone)]
 pub struct AngryAppState {
     db: Tree,
+    db_sync_actor: Addr<DbSyncActor>,
     pool: Arc<ThreadPool>
 }
 
 impl AngryAppState {
-    pub fn new(db_path: String) -> AngryAppState {
-        let config = ConfigBuilder::new()
-            .path(db_path)
-            .build();
-        let db = Tree::start(config).unwrap();
+    pub fn new(db: Tree, db_sync_actor: Addr<DbSyncActor>) -> AngryAppState {
         AngryAppState {
             db,
+            db_sync_actor,
             pool: Arc::new(ThreadPool::new())
         }
     }
 
     pub fn get_db(&self) -> DbExt {
         DbExt {
-            db: self.db.clone()
+            db: self.db.clone(),
+            db_sync_actor: self.db_sync_actor.clone()
         }
     }
 
@@ -95,7 +96,8 @@ impl AngryAppState {
 }
 
 pub struct DbExt {
-    db: Tree
+    db: Tree,
+    db_sync_actor: Addr<DbSyncActor>
 }
 
 // Convenience methods for operation on the sled database
@@ -113,12 +115,13 @@ impl DbExt {
 
     pub fn set_async<K: Into<Vec<u8>>>(&self, key: K, value: Vec<u8>) -> impl Future<Item = (), Error = AngryError<()>> {
         let db = self.db.clone();
+        let addr = self.db_sync_actor.clone();
         let k = key.into();
         flatten_error!(poll_fn(move || blocking(|| {
-            db.set(k.clone(), value.clone())?;
-            // TODO: Maybe we should not flush here?
-            // Maybe we should flush it in a separate thread periodically?
-            db.flush()
+            let res = db.set(k.clone(), value.clone());
+            // Tell the DbSyncActor to flush the database
+            addr.do_send(DbSyncCommand);
+            return res;
         })))
     }
 
