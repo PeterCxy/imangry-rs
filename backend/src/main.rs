@@ -1,14 +1,20 @@
 extern crate actix;
 extern crate actix_web;
 extern crate byteorder;
+extern crate rand;
 extern crate futures;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 extern crate sled;
 extern crate tokio_threadpool;
 
+mod util;
 mod db_sync;
 #[macro_use]
 mod app;
 mod life;
+mod url;
 
 use actix_web::{http, server, App, Path, Responder};
 use sled::{ConfigBuilder, Tree};
@@ -22,6 +28,7 @@ fn main() {
         let mut app = App::with_state(state.clone())
             .route("/test_index.html", http::Method::GET, test_index);
         app = life::setup_routes(app);
+        app = url::setup_routes(app);
         app
     }).bind("127.0.0.1:60324").unwrap().start();
     actix_sys.run();
