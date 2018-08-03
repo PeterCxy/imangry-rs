@@ -6,6 +6,7 @@ authors = ["Peter Cai <peter@typeblog.net>"]
 [dependencies]
 actix = "0.7"
 actix-web = "0.7"
+bytes = "0.4"
 byteorder = "1.2"
 futures = "0.1"
 rand = "0.5"

@@ -1,5 +1,5 @@
 use actix::Addr;
-use actix_web::error::UrlencodedError;
+use actix_web::error::{UrlencodedError, PayloadError};
 use byteorder::{ByteOrder, LittleEndian};
 use db_sync::{DbSyncActor, DbSyncCommand};
 use futures::{Canceled, Future};
@@ -17,6 +17,7 @@ pub enum AngryError<E> {
     DbError(DbError<E>),
     Utf8Error(str::Utf8Error),
     UrlencodedError(UrlencodedError),
+    PayloadError(PayloadError),
     String(String),
     Plain(E),
     Nothing
@@ -55,6 +56,12 @@ impl<E> From<str::Utf8Error> for AngryError<E> {
 impl<E> From<UrlencodedError> for AngryError<E> {
     fn from(err: UrlencodedError) -> AngryError<E> {
         AngryError::UrlencodedError(err)
+    }
+}
+
+impl<E> From<PayloadError> for AngryError<E> {
+    fn from(err: PayloadError) -> AngryError<E> {
+        AngryError::PayloadError(err)
     }
 }
 

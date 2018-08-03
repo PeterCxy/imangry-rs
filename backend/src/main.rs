@@ -1,5 +1,6 @@
 extern crate actix;
 extern crate actix_web;
+extern crate bytes;
 extern crate byteorder;
 extern crate rand;
 extern crate futures;
@@ -15,6 +16,7 @@ mod db_sync;
 mod app;
 mod life;
 mod url;
+mod paste;
 
 use actix_web::{http, server, App, Path, Responder};
 use sled::{ConfigBuilder, Tree};
@@ -29,6 +31,7 @@ fn main() {
             .route("/test_index.html", http::Method::GET, test_index);
         app = life::setup_routes(app);
         app = url::setup_routes(app);
+        app = paste::setup_routes(app);
         app
     }).bind("127.0.0.1:60324").unwrap().start();
     actix_sys.run();
