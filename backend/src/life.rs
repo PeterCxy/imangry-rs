@@ -5,6 +5,22 @@ use futures::Future;
 
 pub fn setup_routes(app: App<AngryAppState>) -> App<AngryAppState> {
     app.resource("/p/life", |r| r.method(http::Method::POST).f(life_add))
+        .resource("/l/life", |r| r.method(http::Method::GET).f(life_show))
+}
+
+fn life_show(req: &HttpRequest<AngryAppState>) -> impl Responder {
+    let state = req.state().clone();
+    let db = state.get_db();
+    state.spawn_pool(db.get_async_u64("life_secs"))
+        .and_then(move |a| {
+            Ok(HttpResponse::Ok().body(format!("{}", a)))
+        })
+        .map_err(|e| {
+            // TODO: Properly return the error
+            println!("{:?}", e);
+            ErrorInternalServerError(e)
+        })
+        .responder()
 }
 
 fn life_add(req: &HttpRequest<AngryAppState>) -> impl Responder {

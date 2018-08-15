@@ -18,7 +18,7 @@ mod life;
 mod url;
 mod paste;
 
-use actix_web::{http, server, App, Path, Responder};
+use actix_web::{fs, http, server, App, Path, Result};
 use sled::{ConfigBuilder, Tree};
 
 fn main() {
@@ -28,17 +28,20 @@ fn main() {
     let state = app::AngryAppState::new(db, db_sync_addr);
     server::new(move || {
         let mut app = App::with_state(state.clone())
-            .route("/test_index.html", http::Method::GET, test_index);
+            .route("/", http::Method::GET, index);
         app = life::setup_routes(app);
         app = url::setup_routes(app);
         app = paste::setup_routes(app);
+        // The static interface
+        app = app.handler("/",
+            fs::StaticFiles::new("./static").unwrap());
         app
     }).bind("127.0.0.1:60324").unwrap().start();
     actix_sys.run();
 }
 
-fn test_index(_info: Path<()>) -> impl Responder {
-    "I'm angry!"
+fn index(_info: Path<()>) -> Result<fs::NamedFile> {
+    Ok(fs::NamedFile::open("./static/index.html")?)
 }
 
 fn open_db(db_path: &str) -> Tree {
