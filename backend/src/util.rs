@@ -21,3 +21,23 @@ pub fn rand_str(len: usize) -> String {
 pub fn conn_scheme_host_port(info: &ConnectionInfo) -> String {
     format!("{}://{}", info.scheme(), info.host())
 }
+
+/*
+ * Return true if the user agent is considered a browser
+ */
+const BROWSER_AGENTS: &[&str] = &[
+    "chrome",
+    "msie",
+    "trident",
+    "firefox",
+    "safari",
+];
+pub fn ua_is_browser(ua: &str) -> bool {
+    let ua = ua.to_lowercase();
+    for ba in BROWSER_AGENTS {
+        if ua.contains(ba) {
+            return true;
+        }
+    }
+    return false;
+}

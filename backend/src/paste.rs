@@ -1,9 +1,10 @@
-use actix_web::{http, App, AsyncResponder, Responder, HttpMessage, HttpRequest};
+use actix_web::{http, App, AsyncResponder, Responder, HttpMessage, HttpRequest, HttpResponse};
 use actix_web::error::{ErrorNotFound, ErrorInternalServerError};
 use app::{AngryError, AngryAppState};
 use bytes::Bytes;
 use futures::Future;
 use futures::future::{self, Either};
+use htmlescape;
 use util;
 
 pub fn setup_routes(app: App<AngryAppState>) -> App<AngryAppState> {
@@ -53,8 +54,10 @@ fn paste(req: &HttpRequest<AngryAppState>) -> impl Responder {
 }
 
 fn show_paste(req: &HttpRequest<AngryAppState>) -> impl Responder {
-    // TODO: Show rendered version of the paste (i.e. add a HTML frame for highlighting etc.)
-    // if the viewer is a browser
+    let ua = req.headers().get(http::header::USER_AGENT)
+        .and_then(|r| {
+            r.to_str().ok()
+        }).unwrap_or("").to_owned();
     let id = req.match_info().get("id").unwrap().to_owned();
     let state = req.state().clone();
     let db = state.get_db();
@@ -63,9 +66,19 @@ fn show_paste(req: &HttpRequest<AngryAppState>) -> impl Responder {
             println!("{:?}", e);
             ErrorInternalServerError(e)
         })
-        .and_then(|p| {
+        .and_then(move |p| {
             if p != "" {
-                Ok(p)
+                let mut resp = HttpResponse::Ok();
+                if util::ua_is_browser(&ua) {
+                    // Show a rendered HTML for GUI browsers
+                    resp.header(http::header::CONTENT_TYPE, "text/html");
+                    Ok(resp.body(
+                        include_str!("../../template/code.html")
+                            .replace("{{code}}", &htmlescape::encode_minimal(&p))))
+                } else {
+                    resp.header(http::header::CONTENT_TYPE, "text/plain");
+                    Ok(resp.body(p))
+                }
             } else {
                 Err(ErrorNotFound("Paste data not recorded"))
             }

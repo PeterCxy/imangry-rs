@@ -2,6 +2,7 @@ extern crate actix;
 extern crate actix_web;
 extern crate bytes;
 extern crate byteorder;
+extern crate htmlescape;
 extern crate rand;
 extern crate futures;
 extern crate serde;
